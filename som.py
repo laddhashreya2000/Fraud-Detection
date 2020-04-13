@@ -1,21 +1,16 @@
-# Self Organizing Map
-
-# Importing the libraries
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# Importing the dataset
 dataset = pd.read_csv('Credit_Card_Applications.csv')
 X = dataset.iloc[:, :-1].values
 y = dataset.iloc[:, -1].values
 
-# Feature Scaling
 from sklearn.preprocessing import MinMaxScaler
 sc = MinMaxScaler(feature_range = (0, 1))
 X = sc.fit_transform(X)
 
-# Training the SOM
+# Self Organizing Map
 from minisom import MiniSom
 som = MiniSom(x = 10, y = 10, input_len = 15, sigma = 1.0, learning_rate = 0.5)
 som.random_weights_init(X)
@@ -47,10 +42,8 @@ mappings = som.win_map(X)#mapping from winning node to customers.
 frauds = np.concatenate((mappings[(2,5)], mappings[(7,3)]), axis = 0)#the coordinates of the winning node, concatenate vertically.
 frauds = sc.inverse_transform(frauds)
 
-
 customers = dataset.iloc[:,1:].values
 is_fraud = np.zeros(len(dataset))
-
 for i in range(len(dataset)):
     if(dataset.iloc[i,0] in frauds):
         is_fraud[i] = 1
@@ -60,13 +53,12 @@ from sklearn.preprocessing import StandardScaler
 sc = StandardScaler()
 customers = sc.fit_transform(customers)
 
-# Part 2 - Now let's make the ANN!
+#the ANN, we will find the probablity of a customer to fraud.
 
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import Dropout
 
-# Initialising the ANN
 classifier = Sequential()
 classifier.add(Dense(units = 6, kernel_initializer = 'uniform', activation = 'relu', input_dim = 15))
 # classifier.add(Dropout(p = 0.1))
@@ -75,14 +67,9 @@ classifier.add(Dropout(p = 0.1))
 classifier.add(Dense(units = 1, kernel_initializer = 'uniform', activation = 'sigmoid'))
 classifier.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
 #we can also use shuffle and verbose parameters of complie
-# Fitting the ANN to the Training set
 classifier.fit(customers, is_fraud, batch_size = 1, epochs = 2)#since few training data and few features
 
-# Part 3 - Making predictions and evaluating the model
-
-# Predicting the Test set results
 y_pred = classifier.predict(customers)
 #now sort the array in python....include custid first
 y_pred = np.concatenate((dataset.iloc[:,0:1], y_pred), axis = 1)
-
 y_pred = y_pred[y_pred[:,1].argsort()]
